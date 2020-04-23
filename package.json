@@ -1,0 +1,17 @@
+{
+  "name": "pokemon-deck-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "1.0.0-rc.3",
+    "express": "4.17.1"
+  },
+  "devDependencies": {
+    "node-fetch": "2.6.0",
+    "prettier": "2.0.5"
+  },
+  "scripts": {
+    "prettier": "prettier --ignore-path .gitignore --write '**/*.{md,js}'"
+  }
+}

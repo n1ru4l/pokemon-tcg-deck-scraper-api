@@ -1,0 +1,80 @@
+require("Decker")
+--[[ Lua code. See documentation: https://api.tabletopsimulator.com/ --]]
+
+-- [[ UTILITY FUNCTIONS ]]
+
+local function str_starts_with(str, start)
+   return str:sub(1, #start) == start
+end
+
+--[[ The onLoad event is called after the game save finishes loading. --]]
+function onLoad()
+  print("Loaded Deck Importer.")
+  print("Available Commands:  \n.import deck-list <id>\n.import tournament <id> <ranking>")
+end
+
+--[[ The onUpdate event is called once per frame. --]]
+function onUpdate()
+
+end
+
+local function buildDeck(rawCards)
+  local cards = {}
+
+  for k, card in pairs(rawCards) do
+    local assetUrl = card["url"]
+    local cardAsset = Decker.Asset(assetUrl, 'https://i.pinimg.com/originals/38/63/b3/3863b3b0eef1d377a59adfbf3918346e.png', { width = 1, height = 1, hiddenBack = true })
+
+    local counter = card["amount"]
+    while (counter > 0)
+    do
+      table.insert(cards, Decker.Card(cardAsset, 1, 1))
+      counter = counter - 1
+    end
+  end
+
+  local deck = Decker.Deck(cards)
+  deck:spawn()
+end
+
+local function onResponse(rawJsonResponse)
+  local responseJson = JSON.decode(rawJsonResponse)
+  if responseJson["error"] then
+    print("Failed importing deck " .. responseJson["error"]["code"])
+    return
+  end
+
+  print("Importing: " .. responseJson["data"]["deckList"]["title"])
+  buildDeck(responseJson["data"]["deckList"]["cards"])
+end
+
+local function requestCallback(object)
+  if (object.is_done) then
+    onResponse(object.text)
+  end
+end
+
+local function importTournamentDeckList(tournamentId, ranking)
+  WebRequest.get("http://localhost:7777/tournament/" .. tournamentId .. "/" .. ranking, requestCallback)
+end
+
+local function importDeckList(deckId)
+  WebRequest.get("http://localhost:7777/deck-list/" .. deckId .. "/", requestCallback)
+end
+
+function onChat(message)
+  if str_starts_with(message, ".import") == false then
+    return
+  end
+
+  chunks = {}
+  for substring in message:gmatch("%S+") do
+     table.insert(chunks, substring)
+  end
+  if chunks[2] == 'tournament' then
+    importTournamentDeckList(chunks[3], chunks[4])
+  end
+  if chunks[2] == 'deck-list' then
+    importDeckList(chunks[3])
+  end
+end
