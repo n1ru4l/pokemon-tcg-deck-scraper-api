@@ -44,12 +44,25 @@ type JSONResponse<Body> =
       err: Error;
     };
 
+type Card = {
+  imageUrl: string;
+  name: string;
+  type: string;
+  abilities: Array<{
+    title: string;
+    effect: string;
+  }>;
+  attacks: Array<{
+    in
+  }>
+}
+
 type DeckList = {
   deckList: {
     title: string;
     cards: Array<{
       amount: number;
-      url: string;
+      card: Card;
     }>;
   };
 };

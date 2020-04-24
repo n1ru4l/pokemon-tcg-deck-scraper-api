@@ -3,16 +3,28 @@
 const fetch = require("node-fetch");
 const express = require("express");
 const $ = require("cheerio");
+const { scrapeCard } = require("./lib")
 
 const BASE_URL = "https://limitlesstcg.com";
 
 const deckCache = new Map();
 const cardCache = new Map();
 
-const scrapeCardImageUrl = async (url) => {
-  const html = await fetch(url).then((res) => res.text());
-  return $("img.card-picture.card-image-img", html).attr("src");
-};
+const scrapeCards = async (cardList) => {
+  const cards = [];
+
+  for (const { count, url } of cardList) {
+    let cardData = cardCache.get(url);
+    if (!cardData) {
+      cardData = await scrapeCard(BASE_URL + url);
+      cardCache.set(url, cardData);
+    }
+    cards.push({
+      amount: count,
+      card: cardData
+    });
+  }
+}
 
 const scrapeDeck = async (url, place) => {
   const html = await fetch(url).then((res) => res.text());
@@ -31,19 +43,7 @@ const scrapeDeck = async (url, place) => {
     });
   });
 
-  const cards = [];
-
-  for (const { count, url } of cardList) {
-    let cardImageUrl = cardCache.get(url);
-    if (!cardImageUrl) {
-      cardImageUrl = await scrapeCardImageUrl(BASE_URL + url);
-      cardCache.set(url, cardImageUrl);
-    }
-    cards.push({
-      amount: count,
-      url: cardImageUrl,
-    });
-  }
+  const cards = await scrapeCards(cardList)
 
   return {
     title,
@@ -109,19 +109,7 @@ const scrapeDeckList = async (url) => {
     }
   );
 
-  const cards = [];
-
-  for (const { count, url } of cardList) {
-    let cardImageUrl = cardCache.get(url);
-    if (!cardImageUrl) {
-      cardImageUrl = await scrapeCardImageUrl(BASE_URL + url);
-      cardCache.set(url, cardImageUrl);
-    }
-    cards.push({
-      amount: count,
-      url: cardImageUrl,
-    });
-  }
+  const cards = await scrapeCards(cardList)
 
   return {
     title,
@@ -132,7 +120,7 @@ const scrapeDeckList = async (url) => {
 
 const buildDeckListCacheKey = (id) => `deck-list_${id}`;
 const buildDeckListScrapeUrl = (id) =>
-  `https://limitlesstcg.com/decks/?list=${id}`;
+  `https://limitlesstcg.com/decks/?list=${id}&lang=de`;
 
 app.get("/deck-list/:id", (req, res) => {
   const id = req.params.id;
